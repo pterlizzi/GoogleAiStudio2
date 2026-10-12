@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { DecisionInput } from '../types/decision';
 import { DECISION_TEMPLATES } from '../data/templates';
-import { Plus, Trash2, Sparkles, ArrowRight, Loader2, BookmarkCheck, HelpCircle } from 'lucide-react';
+import { extractOptionsFromDilemma } from '../utils/optionExtractor';
+import { Plus, Trash2, Sparkles, ArrowRight, Loader2, BookmarkCheck, CheckCircle2, RotateCcw } from 'lucide-react';
 
 interface Props {
   onSubmit: (input: DecisionInput) => void;
@@ -12,11 +13,33 @@ export const DecisionForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [options, setOptions] = useState<string[]>(['', '']);
+  const [autoDetectedOptions, setAutoDetectedOptions] = useState<string[] | null>(null);
   const [userPriorities, setUserPriorities] = useState('');
   const [category, setCategory] = useState<DecisionInput['category']>('career');
   const [urgency, setUrgency] = useState<DecisionInput['urgency']>('medium');
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
+
+  const handleTitleChange = (val: string) => {
+    setTitle(val);
+    const detected = extractOptionsFromDilemma(val);
+    if (detected && detected.length >= 2) {
+      setAutoDetectedOptions(detected);
+      setOptions(detected);
+    } else {
+      setAutoDetectedOptions(null);
+    }
+  };
+
+  const handleTitleBlur = () => {
+    if (!autoDetectedOptions && title.trim().length >= 4) {
+      const detected = extractOptionsFromDilemma(title);
+      if (detected && detected.length >= 2) {
+        setAutoDetectedOptions(detected);
+        setOptions(detected);
+      }
+    }
+  };
 
   const addOption = () => {
     if (options.length < 5) {
@@ -43,6 +66,7 @@ export const DecisionForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
     setUserPriorities(tmpl.userPriorities || '');
     setCategory(tmpl.category);
     setUrgency(tmpl.urgency);
+    setAutoDetectedOptions(null);
   };
 
   const handleAiSuggest = async () => {
@@ -63,6 +87,7 @@ export const DecisionForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
       const data = await res.json();
       if (data.suggestedOptions && Array.isArray(data.suggestedOptions)) {
         setOptions(data.suggestedOptions);
+        setAutoDetectedOptions(data.suggestedOptions);
       }
       if (data.suggestedPriorities && !userPriorities) {
         setUserPriorities(data.suggestedPriorities);
@@ -95,9 +120,9 @@ export const DecisionForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       {/* Template Quick Starts */}
-      <div className="bg-stone-50 border border-stone-200 rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-stone-700 uppercase tracking-wide">
-          <BookmarkCheck className="w-4 h-4 text-stone-500" />
+      <div className="bg-[#6f9cd9] border border-stone-200 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3 text-xs font-bold text-slate-900 uppercase tracking-wide">
+          <BookmarkCheck className="w-4 h-4 text-slate-900" />
           <span>Or Test With a Real-World Dilemma</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -106,11 +131,11 @@ export const DecisionForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
               key={idx}
               type="button"
               onClick={() => loadTemplate(tmpl)}
-              className="text-left p-3 rounded-lg bg-white border border-stone-200 hover:border-stone-400 hover:shadow-xs transition-all group"
+              className="text-left p-3 rounded-lg bg-white/95 border border-stone-200 hover:border-stone-400 hover:shadow-xs transition-all group"
             >
-              <div className="flex items-center justify-between text-[11px] text-stone-400 mb-1">
+              <div className="flex items-center justify-between text-[11px] text-stone-500 mb-1">
                 <span>{tmpl.tag}</span>
-                <span className="font-medium text-stone-600 group-hover:text-stone-900">Load</span>
+                <span className="font-semibold text-stone-700 group-hover:text-stone-900">Load</span>
               </div>
               <p className="text-xs font-semibold text-stone-800 line-clamp-1 group-hover:text-stone-900">
                 {tmpl.title}
@@ -121,54 +146,89 @@ export const DecisionForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
       </div>
 
       {/* Main Input Form */}
-      <form onSubmit={handleSubmit} className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-6">
+      <form onSubmit={handleSubmit} className="bg-[#6f9cd9] border border-stone-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-6">
         {/* Title */}
         <div className="space-y-2">
-          <label className="block text-sm font-semibold text-stone-900">
+          <label className="block text-sm font-bold text-slate-900">
             What decision do you need to break?
           </label>
           <div className="relative">
             <input
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Should I accept the senior role at a Series A startup or stay at Big Tech?"
-              className="w-full text-sm border border-stone-300 rounded-xl px-4 py-3 bg-stone-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-800 transition-all"
+              onChange={(e) => handleTitleChange(e.target.value)}
+              onBlur={handleTitleBlur}
+              placeholder="e.g. Accept Early-Stage Startup Offer vs. Stay at Established Tech Giant"
+              className="w-full text-sm border border-stone-300 rounded-xl px-4 py-3 bg-white text-stone-900 placeholder:text-stone-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 focus:border-stone-800 transition-all shadow-xs"
               required
             />
           </div>
-          <p className="text-xs text-stone-500 flex items-center justify-between">
-            <span>State the central dilemma or question clearly.</span>
+
+          {/* Auto-detected recognition feedback */}
+          {autoDetectedOptions && autoDetectedOptions.length >= 2 && (
+            <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/95 border border-emerald-300 text-xs text-stone-900 shadow-xs animate-fade-in">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  <strong className="text-emerald-950 font-bold">
+                    Recognized {autoDetectedOptions.length} options:
+                  </strong>{' '}
+                  Automatically populated into Option A & B below!
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAutoDetectedOptions(null);
+                  setOptions(['', '']);
+                }}
+                className="text-[11px] font-semibold text-stone-600 hover:text-stone-900 underline shrink-0 cursor-pointer"
+                title="Clear auto-filled options to enter custom text"
+              >
+                Clear / Custom
+              </button>
+            </div>
+          )}
+
+          <p className="text-xs text-slate-900/90 font-medium flex items-center justify-between">
+            <span>Type options directly (e.g. "Option A vs. Option B" or "Should I do X or Y?").</span>
             {title.trim().length > 5 && (
               <button
                 type="button"
                 onClick={handleAiSuggest}
                 disabled={isSuggesting}
-                className="inline-flex items-center gap-1.5 text-stone-700 hover:text-stone-900 font-medium cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-slate-950 hover:text-black font-semibold cursor-pointer underline sm:no-underline"
               >
                 {isSuggesting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <Sparkles className="w-3.5 h-3.5 text-amber-900" />
                 )}
                 <span>Auto-generate candidate options & priorities</span>
               </button>
             )}
           </p>
-          {suggestError && <p className="text-xs text-rose-600">{suggestError}</p>}
+          {suggestError && <p className="text-xs text-rose-800 font-semibold bg-white/80 p-2 rounded">{suggestError}</p>}
         </div>
 
         {/* Options to compare */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="block text-sm font-semibold text-stone-900">
-              The Options Under Consideration ({options.length}/5)
-            </label>
+            <div className="flex items-center gap-2 flex-wrap">
+              <label className="block text-sm font-bold text-slate-900">
+                The Options Under Consideration ({options.length}/5)
+              </label>
+              {autoDetectedOptions && (
+                <span className="text-[11px] font-bold bg-white text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-300 shadow-2xs">
+                  Auto-populated from dilemma
+                </span>
+              )}
+            </div>
             {options.length < 5 && (
               <button
                 type="button"
                 onClick={addOption}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-stone-700 hover:text-stone-900"
+                className="inline-flex items-center gap-1 text-xs font-bold text-slate-950 hover:text-black"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Another Option</span>
@@ -179,7 +239,7 @@ export const DecisionForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
           <div className="space-y-2.5">
             {options.map((opt, idx) => (
               <div key={idx} className="flex items-center gap-2">
-                <span className="w-6 text-xs font-mono font-bold text-stone-400 text-center">
+                <span className="w-6 text-xs font-mono font-bold text-slate-900 bg-white/70 py-1.5 rounded-md text-center shadow-2xs">
                   {String.fromCharCode(65 + idx)}
                 </span>
                 <input
@@ -189,14 +249,14 @@ export const DecisionForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
                   placeholder={`Option ${String.fromCharCode(65 + idx)} (e.g. ${
                     idx === 0 ? 'Accept the Series A startup offer' : 'Stay at current job with annual bonus'
                   })`}
-                  className="flex-1 text-xs border border-stone-200 rounded-lg px-3.5 py-2.5 bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-stone-400"
+                  className="flex-1 text-xs border border-stone-200 rounded-lg px-3.5 py-2.5 bg-white text-stone-900 shadow-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20"
                   required
                 />
                 {options.length > 2 && (
                   <button
                     type="button"
                     onClick={() => removeOption(idx)}
-                    className="p-2 text-stone-400 hover:text-rose-600 transition-colors"
+                    className="p-2 text-slate-800 hover:text-rose-700 bg-white/60 hover:bg-white rounded-md transition-colors shadow-2xs"
                     title="Remove this option"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -210,44 +270,44 @@ export const DecisionForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
         {/* Optional Context & Priorities */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-stone-800 flex items-center gap-1">
+            <label className="block text-xs font-bold text-slate-900 flex items-center gap-1">
               <span>Personal Context & Dilemma Background</span>
-              <span className="text-stone-400 font-normal">(Optional)</span>
+              <span className="text-slate-700 font-normal">(Optional)</span>
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="What makes this tough? Any specific numbers, timelines, or fears?"
-              className="w-full text-xs border border-stone-200 rounded-lg p-3 bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-stone-400 resize-none"
+              className="w-full text-xs border border-stone-200 rounded-lg p-3 bg-white text-stone-900 shadow-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 resize-none"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-stone-800 flex items-center gap-1">
+            <label className="block text-xs font-bold text-slate-900 flex items-center gap-1">
               <span>Your Values, Constraints & Priorities</span>
-              <span className="text-stone-400 font-normal">(Optional)</span>
+              <span className="text-slate-700 font-normal">(Optional)</span>
             </label>
             <textarea
               value={userPriorities}
               onChange={(e) => setUserPriorities(e.target.value)}
               rows={3}
               placeholder="e.g. Financial security is #1; learning velocity matters more than title; no weekend work."
-              className="w-full text-xs border border-stone-200 rounded-lg p-3 bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-stone-400 resize-none"
+              className="w-full text-xs border border-stone-200 rounded-lg p-3 bg-white text-stone-900 shadow-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20 resize-none"
             />
           </div>
         </div>
 
         {/* Category & Urgency */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/40">
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 mb-1.5">
               Category
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as any)}
-              className="w-full text-xs border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-stone-400"
+              className="w-full text-xs border border-stone-200 rounded-lg p-2.5 bg-white text-stone-900 shadow-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20"
             >
               <option value="career">Career & Professional</option>
               <option value="finance">Financial & Investments</option>
@@ -259,13 +319,13 @@ export const DecisionForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+            <label className="block text-xs font-bold text-slate-900 mb-1.5">
               Decision Horizon
             </label>
             <select
               value={urgency}
               onChange={(e) => setUrgency(e.target.value as any)}
-              className="w-full text-xs border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-stone-400"
+              className="w-full text-xs border border-stone-200 rounded-lg p-2.5 bg-white text-stone-900 shadow-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-900/20"
             >
               <option value="high">Urgent (Need answer in 24–72 hours)</option>
               <option value="medium">Standard (Evaluating this week/month)</option>

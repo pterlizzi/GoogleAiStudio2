@@ -110,7 +110,7 @@ export const ComparisonTableView: React.FC<Props> = ({
 
                     {/* Scores per Option */}
                     {options.map((opt) => {
-                      const scoreData = crit.optionScores[opt];
+                      const scoreData = crit.optionScores?.[opt];
                       const score = scoreData ? scoreData.score : 0;
                       const isCriterionWinner = crit.winner === opt;
 
@@ -158,7 +158,7 @@ export const ComparisonTableView: React.FC<Props> = ({
                           <p className="text-stone-600 mb-3">{crit.description}</p>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2 border-t border-stone-100">
                             {options.map((opt) => {
-                              const scoreData = crit.optionScores[opt];
+                              const scoreData = crit.optionScores?.[opt];
                               return (
                                 <div key={opt} className="bg-stone-50 p-2.5 rounded-md">
                                   <div className="font-medium text-stone-800 text-[11px] mb-1">

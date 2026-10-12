@@ -67,7 +67,7 @@ export const SWOTView: React.FC<Props> = ({ data, winningOption }) => {
                   <span className="text-[11px] text-stone-400">Internal · Advantage</span>
                 </div>
                 <ul className="space-y-2.5">
-                  {activeSWOT.strengths.map((item, idx) => (
+                  {(activeSWOT.strengths || []).map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2.5 text-xs text-stone-700 leading-relaxed">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                       <span>{item}</span>
@@ -89,7 +89,7 @@ export const SWOTView: React.FC<Props> = ({ data, winningOption }) => {
                   <span className="text-[11px] text-stone-400">Internal · Limitation</span>
                 </div>
                 <ul className="space-y-2.5">
-                  {activeSWOT.weaknesses.map((item, idx) => (
+                  {(activeSWOT.weaknesses || []).map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2.5 text-xs text-stone-700 leading-relaxed">
                       <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
                       <span>{item}</span>
@@ -111,7 +111,7 @@ export const SWOTView: React.FC<Props> = ({ data, winningOption }) => {
                   <span className="text-[11px] text-stone-400">External · Potential</span>
                 </div>
                 <ul className="space-y-2.5">
-                  {activeSWOT.opportunities.map((item, idx) => (
+                  {(activeSWOT.opportunities || []).map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2.5 text-xs text-stone-700 leading-relaxed">
                       <span className="w-1.5 h-1.5 rounded-full bg-sky-500 mt-1.5 shrink-0" />
                       <span>{item}</span>
@@ -133,7 +133,7 @@ export const SWOTView: React.FC<Props> = ({ data, winningOption }) => {
                   <span className="text-[11px] text-stone-400">External · Vulnerability</span>
                 </div>
                 <ul className="space-y-2.5">
-                  {activeSWOT.threats.map((item, idx) => (
+                  {(activeSWOT.threats || []).map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2.5 text-xs text-stone-700 leading-relaxed">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                       <span>{item}</span>

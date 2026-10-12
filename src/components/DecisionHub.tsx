@@ -37,6 +37,18 @@ export const DecisionHub: React.FC<Props> = ({ analysis, onReset }) => {
 
   const { verdict, input, prosAndCons, comparisonTable, swotAnalysis, blindSpots } = analysis;
 
+  const tenTenTen = verdict?.tenTenTen || {
+    tenMinutes: 'Initial emotional reaction settles.',
+    tenMonths: 'Progress and compounding results become clear.',
+    tenYears: 'Valuable milestone and learning experience in hindsight.',
+  };
+
+  const reversibility = verdict?.reversibility || {
+    doorType: 'Type 2 (Two-Way Door)',
+    explanation: 'This decision can be adjusted or pivoted if outcomes deviate from expectations.',
+    fallbackSafetyNet: 'Re-evaluate at 90-day milestone and pivot if needed.',
+  };
+
   const handleCopyMarkdown = () => {
     const md = `# The Tiebreaker: ${input.title}
 **Verdict Winner:** ${verdict.winner} (${verdict.confidenceScore}% confidence)
@@ -44,13 +56,13 @@ export const DecisionHub: React.FC<Props> = ({ analysis, onReset }) => {
 **Key Differentiator:** ${verdict.keyDifferentiator}
 
 ## 10-10-10 Test
-- In 10 Minutes: ${verdict.tenTenTen.tenMinutes}
-- In 10 Months: ${verdict.tenTenTen.tenMonths}
-- In 10 Years: ${verdict.tenTenTen.tenYears}
+- In 10 Minutes: ${tenTenTen.tenMinutes}
+- In 10 Months: ${tenTenTen.tenMonths}
+- In 10 Years: ${tenTenTen.tenYears}
 
-## Reversibility (${verdict.reversibility.doorType})
-${verdict.reversibility.explanation}
-**Safety Net:** ${verdict.reversibility.fallbackSafetyNet}
+## Reversibility (${reversibility.doorType})
+${reversibility.explanation}
+**Safety Net:** ${reversibility.fallbackSafetyNet}
 
 ## Devil's Advocate Critique
 ${verdict.devilsAdvocate}
@@ -171,15 +183,15 @@ ${verdict.immediateNextStep}
             <div className="space-y-2 text-xs">
               <div>
                 <span className="text-stone-400 font-medium">In 10 Minutes: </span>
-                <span className="text-stone-300">{verdict.tenTenTen.tenMinutes}</span>
+                <span className="text-stone-300">{tenTenTen.tenMinutes}</span>
               </div>
               <div>
                 <span className="text-stone-400 font-medium">In 10 Months: </span>
-                <span className="text-stone-300">{verdict.tenTenTen.tenMonths}</span>
+                <span className="text-stone-300">{tenTenTen.tenMonths}</span>
               </div>
               <div>
                 <span className="text-stone-400 font-medium">In 10 Years: </span>
-                <span className="text-stone-300">{verdict.tenTenTen.tenYears}</span>
+                <span className="text-stone-300">{tenTenTen.tenYears}</span>
               </div>
             </div>
           </div>
@@ -188,14 +200,14 @@ ${verdict.immediateNextStep}
           <div className="bg-stone-800/40 border border-stone-700/60 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2 text-xs font-semibold text-stone-300 uppercase tracking-wide">
               <DoorOpen className="w-3.5 h-3.5 text-stone-400" />
-              <span>Door Test: {verdict.reversibility.doorType}</span>
+              <span>Door Test: {reversibility.doorType}</span>
             </div>
             <p className="text-xs text-stone-300 leading-relaxed">
-              {verdict.reversibility.explanation}
+              {reversibility.explanation}
             </p>
             <div className="pt-2 border-t border-stone-700/60 text-xs">
               <span className="text-stone-400 font-medium">Fallback Safety Net: </span>
-              <span className="text-stone-300">{verdict.reversibility.fallbackSafetyNet}</span>
+              <span className="text-stone-300">{reversibility.fallbackSafetyNet}</span>
             </div>
           </div>
         </div>

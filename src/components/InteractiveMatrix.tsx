@@ -42,7 +42,7 @@ export const InteractiveMatrix: React.FC<Props> = ({ criteria, options, initialW
       let weightedSum = 0;
       criteria.forEach((c) => {
         const w = weights[c.name] ?? 1;
-        const optScore = c.optionScores[opt]?.score ?? 5;
+        const optScore = c.optionScores?.[opt]?.score ?? 5;
         weightedSum += optScore * w;
       });
 
@@ -192,7 +192,7 @@ export const InteractiveMatrix: React.FC<Props> = ({ criteria, options, initialW
                     <span key={opt} className="font-mono">
                       <span className="text-stone-400">{opt.slice(0, 10)}:</span>{' '}
                       <span className="font-semibold text-stone-800">
-                        {c.optionScores[opt]?.score ?? '-'}/10
+                        {c.optionScores?.[opt]?.score ?? '-'}/10
                       </span>
                     </span>
                   ))}

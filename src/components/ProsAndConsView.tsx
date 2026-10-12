@@ -15,17 +15,18 @@ export const ProsAndConsView: React.FC<Props> = ({ data, winningOption }) => {
   const allCategories = Array.from(
     new Set(
       data.flatMap((item) => [
-        ...item.pros.map((p) => p.category),
-        ...item.cons.map((c) => c.category),
+        ...(item.pros || []).map((p) => p.category),
+        ...(item.cons || []).map((c) => c.category),
       ])
     )
   ).filter(Boolean);
 
   const activeOption = data.find((d) => d.option === activeOptionTab) || data[0];
 
-  const filterItems = <T extends { category: string }>(items: T[]) => {
-    if (selectedCategory === 'all') return items;
-    return items.filter((item) => item.category === selectedCategory);
+  const filterItems = <T extends { category: string }>(items: T[] = []) => {
+    const safeItems = items || [];
+    if (selectedCategory === 'all') return safeItems;
+    return safeItems.filter((item) => item.category === selectedCategory);
   };
 
   return (
@@ -81,9 +82,9 @@ export const ProsAndConsView: React.FC<Props> = ({ data, winningOption }) => {
             <div className="flex items-center gap-2 text-xs text-stone-500 mb-1">
               <span>Core Trade-off Summary</span>
               <span>·</span>
-              <span>{activeOption.pros.length} Pros</span>
+              <span>{(activeOption.pros || []).length} Pros</span>
               <span>·</span>
-              <span>{activeOption.cons.length} Cons</span>
+              <span>{(activeOption.cons || []).length} Cons</span>
             </div>
             <p className="text-sm font-medium text-stone-800 italic">
               "{activeOption.summaryTakeaway}"
