@@ -67,6 +67,19 @@ async function generateWithFallback(prompt: string, jsonMode = true): Promise<st
   throw new Error('All model attempts failed.');
 }
 
+function safeJsonParse(text: string): any {
+  let cleaned = text.replace(/```(?:json)?/gi, '').trim();
+  // Strip JS single-line comments
+  cleaned = cleaned.replace(/\/\/[^\n\r]*/g, '');
+  // Extract outermost JSON block
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+  }
+  return JSON.parse(cleaned);
+}
+
 // API: Analyze Decision with Pros/Cons, Comparison Matrix, SWOT, & Tiebreaker Verdict
 app.post('/api/analyze-decision', async (req, res) => {
   try {
@@ -77,8 +90,6 @@ app.post('/api/analyze-decision', async (req, res) => {
         error: 'Please provide a decision title and at least two options to compare.',
       });
     }
-
-    const ai = getAiClient();
 
     const prompt = `You are "The Tiebreaker", an elite decision strategist, executive advisor, and cognitive scientist.
 Your role is to help a person make a high-stakes, clear-headed choice between options without fence-sitting, bias, or hand-waving.
@@ -92,65 +103,60 @@ ${category ? `Category: "${category}"` : ''}
 OPTIONS TO EVALUATE:
 ${options.map((opt: string, i: number) => `${i + 1}. ${opt}`).join('\n')}
 
-Perform an exhaustive, multi-lens analysis and return a single valid JSON object adhering EXACTLY to this structure:
+Perform an exhaustive, multi-lens analysis and return a single valid JSON object adhering EXACTLY to this schema:
 {
-  "summary": "Crisp 1-2 sentence executive framing of the core tension/trade-off.",
+  "summary": "Crisp 1-2 sentence executive framing of the core tension and trade-off.",
   "verdict": {
-    "winner": "Exact name of the best option among the provided options",
-    "confidenceScore": 85, // integer 60-95 based on clarity of the winner given constraints
-    "headline": "A punchy, memorable verdict headline (e.g., 'Optimize for Compounding Autonomy Over Short-Term Comfort')",
-    "rationale": "Direct, empathetic, uncompromising reason why this option wins the tiebreak. No fence-sitting.",
-    "keyDifferentiator": "The single deciding factor or pivot point that separates the winner from the runner-up.",
-    "devilsAdvocate": "The sharpest, most uncomfortable critique of the winning option — the blind spot or risk the user must stay vigilant about.",
+    "winner": "${options[0]}",
+    "confidenceScore": 85,
+    "headline": "A memorable verdict headline",
+    "rationale": "Direct, empathetic, uncompromising reason why this option wins the tiebreak.",
+    "keyDifferentiator": "The single deciding factor or pivot point that separates the winner.",
+    "devilsAdvocate": "The sharpest critique of the winning option — the blind spot or risk.",
     "tenTenTen": {
-      "tenMinutes": "How will you feel 10 minutes after choosing this? (initial emotional relief / discomfort)",
-      "tenMonths": "Where will you be 10 months after? (the grind, compounding gains, or adjustment)",
-      "tenYears": "How will this look in 10 years? (the long-term trajectory and regret minimization)"
+      "tenMinutes": "How will you feel 10 minutes after choosing this?",
+      "tenMonths": "Where will you be 10 months after?",
+      "tenYears": "How will this look in 10 years?"
     },
     "reversibility": {
-      "doorType": "Type 1 (One-Way Door)" or "Type 2 (Two-Way Door)",
-      "explanation": "Why this is or isn't easily reversible, and the true cost of backtracking.",
+      "doorType": "Type 1 (One-Way Door)",
+      "explanation": "Why this is or is not easily reversible, and the true cost of backtracking.",
       "fallbackSafetyNet": "Specific tripwire or fallback plan if circumstances change."
     },
-    "immediateNextStep": "A concrete micro-action or low-risk experiment the user can take within 48 hours to validate or commit."
+    "immediateNextStep": "A concrete micro-action or low-risk experiment to validate within 48 hours."
   },
   "prosAndCons": [
-    // For each option provided in the options list:
     {
-      "option": "Exact option name",
+      "option": "${options[0]}",
       "pros": [
-        { "text": "Specific pro", "impact": 4, "category": "Career" | "Financial" | "Health/Wellbeing" | "Time/Effort" | "Risk" | "Growth" | "Relationships" | "Strategic" }
+        { "text": "Specific pro", "impact": 4, "category": "Career" }
       ],
       "cons": [
-        { "text": "Specific con", "impact": 3, "category": "Career" | "Financial" | "Health/Wellbeing" | "Time/Effort" | "Risk" | "Growth" | "Relationships" | "Strategic" }
+        { "text": "Specific con", "impact": 3, "category": "Risk" }
       ],
-      "netScore": 8, // calculated numeric advantage
-      "summaryTakeaway": "One-line distillation of this option's core bargain."
+      "netScore": 8,
+      "summaryTakeaway": "One-line distillation of this option core bargain."
     }
   ],
   "comparisonTable": {
     "criteria": [
-      // 4 to 6 relevant comparison criteria (e.g. Financial Return, Work-Life Balance, Growth Curve, Downside Risk, Execution Complexity, Personal Freedom)
       {
         "name": "Criterion Name",
-        "weightImportance": 5, // 1 to 5
+        "weightImportance": 5,
         "description": "Why this matters in this decision",
         "optionScores": {
-          // Keyed by each option name: score 1 to 10 and a concise comment explaining why
-          "Option Name": { "score": 8, "comment": "Brief rationale" }
+          "${options[0]}": { "score": 8, "comment": "Brief rationale" }
         },
-        "winner": "Option name that wins on this criterion"
+        "winner": "${options[0]}"
       }
     ],
     "overallScores": {
-      // Keyed by each option name: weighted sum or overall rating out of 100
-      "Option Name": 84
+      "${options[0]}": 84
     }
   },
   "swotAnalysis": [
-    // For each option:
     {
-      "option": "Exact option name",
+      "option": "${options[0]}",
       "strengths": ["3-4 distinct internal strengths"],
       "weaknesses": ["3-4 distinct internal weaknesses"],
       "opportunities": ["3-4 external future opportunities"],
@@ -158,25 +164,14 @@ Perform an exhaustive, multi-lens analysis and return a single valid JSON object
     }
   ],
   "blindSpots": [
-    "3 non-obvious factors, psychological biases, or hidden costs the decision-maker may be ignoring."
+    "3 non-obvious factors, psychological biases, or hidden costs."
   ]
 }
 
-Provide highly thoughtful, non-generic, domain-specific insights. Respond with ONLY the raw JSON object. Do not wrap in markdown quotes if possible, or use standard json.`;
+Provide entries for EVERY option in options list. Return ONLY valid raw JSON with no comments.`;
 
     const responseText = await generateWithFallback(prompt, true);
-    let parsedData;
-    try {
-      parsedData = JSON.parse(responseText.trim());
-    } catch {
-      // Clean possible markdown code fences if returned
-      const cleaned = responseText
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/i, '')
-        .replace(/```\s*$/i, '')
-        .trim();
-      parsedData = JSON.parse(cleaned);
-    }
+    const parsedData = safeJsonParse(responseText);
 
     return res.json(parsedData);
   } catch (error: any) {
@@ -211,28 +206,18 @@ Return a valid JSON object with:
 {
   "scenario": "${scenario}",
   "impactSummary": "2-3 sentences explaining how this scenario disrupts the assumptions.",
-  "newRecommendedOption": "Which option is best UNDER THIS SPECIFIC SCENARIO",
+  "newRecommendedOption": "${currentWinner}",
   "shiftsInAdvantage": [
-    "Key shift 1 (e.g. Option A's vulnerability increases because...)",
+    "Key shift 1",
     "Key shift 2",
     "Key shift 3"
   ],
   "contingencyAdvice": "Actionable hedge or contingency rule to protect against this scenario."
 }
-Respond ONLY with the JSON object.`;
+Respond ONLY with the JSON object. No comments.`;
 
     const responseText = await generateWithFallback(prompt, true);
-    let parsedData;
-    try {
-      parsedData = JSON.parse(responseText.trim());
-    } catch {
-      const cleaned = responseText
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/i, '')
-        .replace(/```\s*$/i, '')
-        .trim();
-      parsedData = JSON.parse(cleaned);
-    }
+    const parsedData = safeJsonParse(responseText);
 
     return res.json(parsedData);
   } catch (error: any) {
@@ -251,21 +236,15 @@ app.post('/api/suggest-options', async (req, res) => {
       return res.status(400).json({ error: 'Please provide a dilemma topic.' });
     }
 
-    const prompt = `Given this decision dilemma: "${dilemma}", suggest 3 to 4 distinct, well-defined options, and 3 key priority factors/criteria to consider.
+    const prompt = `Given this decision dilemma: "${dilemma}", suggest 3 distinct, well-defined options, and 3 key priority factors/criteria to consider.
 Return valid JSON:
 {
-  "suggestedOptions": ["Option 1 with concise clarifying title", "Option 2", "Option 3"],
+  "suggestedOptions": ["Option 1", "Option 2", "Option 3"],
   "suggestedPriorities": "A concise summary of key priorities to think about"
 }`;
 
     const text = await generateWithFallback(prompt, true);
-    const parsed = JSON.parse(
-      text
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/i, '')
-        .replace(/```\s*$/i, '')
-        .trim()
-    );
+    const parsed = safeJsonParse(text);
 
     return res.json(parsed);
   } catch (error: any) {
